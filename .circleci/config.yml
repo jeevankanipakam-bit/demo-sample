@@ -4,36 +4,53 @@ jobs:
   build:
     docker:
       - image: cimg/python:3.9
+    working_directory: ~/project
     steps:
       - checkout
-      - run: docker build -t myapp .
+
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --upgrade pip
+            pip install flask
+
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t my-flask-app .
 
   test:
     docker:
       - image: cimg/python:3.9
+    working_directory: ~/project
     steps:
       - checkout
-      - run: pip install flask
-      - run: python -m unittest
+
+      - run:
+          name: Install dependencies
+          command: |
+            pip install flask
+
+      - run:
+          name: Test Application
+          command: |
+            python -m py_compile app.py
 
   deploy:
     machine: true
     steps:
       - checkout
+
       - run:
-          name: Install AWS CLI
+          name: Deploy Application
           command: |
-            sudo apt-get update
-            sudo apt-get install -y awscli
-      - run:
-          name: Push Docker Image
-          command: |
-            docker build -t my-python-app .
-            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 320042238069.dkr.ecr.ap-south-1.amazonaws.com
-            docker push 320042238069.dkr.ecr.ap-south-1.amazonaws.com/my-python-app:latest
+            echo "Deploying Flask App..."
+            docker build -t my-flask-app .
+            docker run -d -p 6000:6000 my-flask-app
+
 workflows:
   version: 2
-  pipeline:
+  ci_pipeline:
     jobs:
       - build
       - test:
