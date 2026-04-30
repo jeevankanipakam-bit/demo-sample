@@ -5,22 +5,19 @@ jobs:
     docker:
       - image: cimg/python:3.9
     working_directory: ~/project
-
     steps:
       - checkout
-
       - setup_remote_docker
 
       - run:
           name: Install dependencies
           command: |
-            python -m pip install --upgrade pip
             pip install flask
 
       - run:
           name: Build Docker Image
           command: |
-            docker build -t my-flask-app .
+            docker build -t my-python-app .
 
   test:
     docker:
@@ -29,16 +26,8 @@ jobs:
 
     steps:
       - checkout
-
-      - run:
-          name: Install dependencies
-          command: |
-            pip install flask
-
-      - run:
-          name: Test Application
-          command: |
-            python -m py_compile app.py
+      - run: pip install flask
+      - run: python -m py_compile app.py
 
   deploy:
     machine: true
@@ -46,12 +35,29 @@ jobs:
       - checkout
 
       - run:
-          name: Deploy Application
+          name: Install AWS CLI
           command: |
-            echo "Deploying Flask App..."
-            docker build -t my-flask-app .
-            docker run -d -p 6000:6000 my-flask-app
+            sudo apt-get update
+            sudo apt-get install -y awscli
 
+      - run:
+          name: Login to AWS ECR
+          command: |
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 320042238069.dkr.ecr.ap-south-1.amazonaws.com
+
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t my-python-app .
+
+      - run:
+          name: Tag Docker Image
+          command: |
+            docker tag my-python-app:latest 320042238069.dkr.ecr.ap-south-1.amazonaws.com/my-python-app:latest
+      - run:
+          name: Push Docker Image
+          command: |
+            docker push 320042238069.dkr.ecr.ap-south-1.amazonaws.com/my-python-app:latest
 workflows:
   version: 2
   ci_pipeline:
