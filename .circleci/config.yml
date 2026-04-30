@@ -13,21 +13,32 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - run: pip install flask
       - run: python -m unittest
 
   deploy:
     machine: true
     steps:
       - checkout
-      - run: |
-          docker build -t myapp .
-          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <ECR_URL>
-          docker push <ECR_URL>/myapp
-
+      - run:
+          name: Install AWS CLI
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y awscli
+      - run:
+          name: Push Docker Image
+          command: |
+            docker build -t my-python-app .
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 320042238069.dkr.ecr.ap-south-1.amazonaws.com
+            docker push 320042238069.dkr.ecr.ap-south-1.amazonaws.com/my-python-app:latest
 workflows:
   version: 2
   pipeline:
     jobs:
       - build
-      - test
-      - deploy
+      - test:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - test
