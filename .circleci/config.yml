@@ -34,11 +34,7 @@ jobs:
     steps:
       - checkout
 
-      - run:
-          name: Install AWS CLI
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y awscli
+
 
       - run:
           name: Login to AWS ECR
